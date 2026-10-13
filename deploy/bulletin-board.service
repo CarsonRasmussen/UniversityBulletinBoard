@@ -1,0 +1,17 @@
+[Unit]
+Description=University Bulletin Board
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/var/www/university-bulletin-board
+Environment=RAILS_ENV=production
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=/etc/bulletin-board.env
+ExecStart=/usr/local/bin/bundle exec rails server -b 127.0.0.1 -p 3000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
