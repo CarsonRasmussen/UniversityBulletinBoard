@@ -65,7 +65,7 @@ echo "Preparing and restarting the app..."
 ssh -i "$KEY" "ubuntu@$HOST" 'bash -s' <<'REMOTE'
 set -euo pipefail
 
-export PATH="/usr/local/bin:/usr/bin:/bin"
+export PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
 export RAILS_ENV=production
 export SECRET_KEY_BASE="$(sudo sed -n 's/^SECRET_KEY_BASE=//p' /etc/bulletin-board.env)"
 test -n "$SECRET_KEY_BASE"
