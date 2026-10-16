@@ -1,2 +1,60 @@
-<h1>University Bulletin Board</h1>
-<p>Hello World!</p>
+<% content_for :title, "Home | University Bulletin Board" %>
+
+<section class="welcome-section">
+  <div>
+    <h1>What's happening on campus?</h1>
+    <p class="welcome-description">
+      Discover events, share updates, and stay connected.
+    </p>
+  </div>
+
+  <button class="create-button" disabled>
+    <span aria-hidden="true">＋</span> Create post
+  </button>
+</section>
+
+<section class="discovery-section" aria-label="Find campus posts">
+  <label for="campus-search" class="visually-hidden">
+    Search campus posts
+  </label>
+
+  <div class="search-box">
+    <svg width="22" height="22" viewBox="0 0 24 24"
+         fill="none" stroke="currentColor" stroke-width="2"
+         aria-hidden="true">
+      <circle cx="10.5" cy="10.5" r="6.5"></circle>
+      <path d="m16 16 5 5"></path>
+    </svg>
+
+    <input id="campus-search"
+           type="search"
+           placeholder="Search campus posts..."
+           disabled>
+  </div>
+
+  <div class="category-tabs" aria-label="Post categories">
+    <span class="category-tab selected">All posts</span>
+
+    <% ["Events", "Clubs", "Announcements", "Discussions"].each do |category| %>
+      <button class="category-tab" disabled>
+        <%= category %>
+      </button>
+    <% end %>
+  </div>
+</section>
+
+<section aria-labelledby="popular-heading">
+  <div class="posts-heading mb-4">
+    <h2 id="popular-heading">Popular on campus</h2>
+    <button class="view-all" disabled>
+      View all posts &rarr;
+    </button>
+  </div>
+
+  <div class="bg-white border rounded-3 p-5 text-center">
+    <h3 class="h5 fw-bold">No posts yet</h3>
+    <p class="text-secondary mb-0">
+      Campus posts will appear here once students start sharing.
+    </p>
+  </div>
+</section>
