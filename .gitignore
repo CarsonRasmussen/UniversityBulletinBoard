@@ -1,5 +1,8 @@
 *.pem
 .env
+.env.*
+!.env.example
+/.aws/
 /config/master.key
 /config/credentials/*.key
 /.bundle

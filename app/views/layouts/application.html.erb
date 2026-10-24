@@ -33,12 +33,21 @@
           <button class="navigation-link" disabled>Search</button>
           <button class="navigation-link" disabled>Create Post</button>
 
-          <span class="guest-avatar" title="Not signed in">U</span>
+          <% if current_user %>
+            <span class="navigation-link"><%= current_user.name %></span>
+            <%= button_to "Log out", logout_path, method: :delete, class: "navigation-link" %>
+          <% else %>
+            <%= link_to "Log in", login_path, class: "navigation-link" %>
+            <%= link_to "Sign up", signup_path, class: "navigation-link" %>
+          <% end %>
         </div>
       </nav>
     </header>
 
     <main class="board-container page-content">
+      <% flash.each do |type, message| %>
+        <div class="alert <%= type == "alert" ? "alert-danger" : "alert-success" %>" role="alert"><%= message %></div>
+      <% end %>
       <%= yield %>
     </main>
 

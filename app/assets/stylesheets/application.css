@@ -5,6 +5,24 @@
   --border: #e0e6ef;
 }
 
+.auth-panel {
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 28px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.auth-panel label { display: block; margin: 16px 0 6px; }
+.auth-panel input:not([type="submit"]) {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.auth-panel input[type="submit"] { margin-top: 20px; }
+
 * {
   box-sizing: border-box;
 }

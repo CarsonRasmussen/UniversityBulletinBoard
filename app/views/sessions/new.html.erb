@@ -1,0 +1,19 @@
+<% content_for :title, "Log in | University Bulletin Board" %>
+<section class="auth-panel">
+  <h1>Login</h1>
+  <%= form_with url: login_path do |form| %>
+    <%= form.label :email, "University email" %>
+    <%= form.email_field :email, value: params[:email], required: true, autocomplete: "email" %>
+    <%= form.label :password %>
+    <%= form.password_field :password, required: true, autocomplete: "current-password" %>
+    <%= form.submit "Log in", class: "btn btn-primary" %>
+  <% end %>
+  <p class="mt-3">New here? <%= link_to "Create an account", signup_path %></p>
+  <hr>
+  <h2 class="h5">Need a verification email?</h2>
+  <%= form_with url: verification_path do |form| %>
+    <%= form.label :email, "University email", for: "verification-email" %>
+    <%= form.email_field :email, id: "verification-email", required: true, autocomplete: "email" %>
+    <%= form.submit "Resend verification", class: "btn btn-outline-primary" %>
+  <% end %>
+</section>

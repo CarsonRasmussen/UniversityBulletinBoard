@@ -1,4 +1,10 @@
 Rails.application.routes.draw do
+  get "signup", to: "registrations#new"
+  post "signup", to: "registrations#create"
+  get "login", to: "sessions#new"
+  post "login", to: "sessions#create"
+  delete "logout", to: "sessions#destroy"
+  resource :verification, only: [ :show, :create, :update ]
   get "home/index"
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

@@ -68,7 +68,20 @@ set -euo pipefail
 export PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
 export RAILS_ENV=production
 export SECRET_KEY_BASE="$(sudo sed -n 's/^SECRET_KEY_BASE=//p' /etc/bulletin-board.env)"
+export APP_HOST="$(sudo sed -n 's/^APP_HOST=//p' /etc/bulletin-board.env)"
+export APP_PROTOCOL="$(sudo sed -n 's/^APP_PROTOCOL=//p' /etc/bulletin-board.env)"
+export MAIL_FROM="$(sudo sed -n 's/^MAIL_FROM=//p' /etc/bulletin-board.env)"
+export SMTP_ADDRESS="$(sudo sed -n 's/^SMTP_ADDRESS=//p' /etc/bulletin-board.env)"
+export SMTP_PORT="$(sudo sed -n 's/^SMTP_PORT=//p' /etc/bulletin-board.env)"
+export SMTP_USERNAME="$(sudo sed -n 's/^SMTP_USERNAME=//p' /etc/bulletin-board.env)"
+export SMTP_PASSWORD="$(sudo sed -n 's/^SMTP_PASSWORD=//p' /etc/bulletin-board.env)"
 test -n "$SECRET_KEY_BASE"
+for setting in APP_HOST APP_PROTOCOL MAIL_FROM SMTP_ADDRESS SMTP_PORT SMTP_USERNAME SMTP_PASSWORD; do
+  if [ -z "${!setting}" ]; then
+    echo "Missing $setting in /etc/bulletin-board.env"
+    exit 1
+  fi
+done
 
 cd /var/www/university-bulletin-board
 mkdir -p log tmp/pids storage

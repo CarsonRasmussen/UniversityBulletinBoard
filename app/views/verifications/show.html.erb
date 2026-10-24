@@ -1,0 +1,5 @@
+<section class="auth-panel">
+  <h1>Verify your university email</h1>
+  <p>Confirm your email to finish creating your student account.</p>
+  <%= button_to "Verify email", verification_path, method: :patch, params: { token: @token }, class: "btn btn-primary" %>
+</section>
