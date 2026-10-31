@@ -27,5 +27,7 @@ bundle install
 echo "Preparing database..."
 bundle exec rails db:prepare
 
-echo "Open http://localhost:3000"
-exec bundle exec rails server -b 127.0.0.1 -p 3000
+PORT="${PORT:-3000}"
+export APP_PORT="${APP_PORT:-$PORT}"
+echo "Open http://localhost:$PORT"
+exec bundle exec rails server -b 127.0.0.1 -p "$PORT"

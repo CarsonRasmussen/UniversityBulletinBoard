@@ -1,0 +1,8 @@
+<% if posts.any? %>
+  <div class="post-grid"><%= render partial: "posts/post", collection: posts %></div>
+<% else %>
+  <div class="bg-white border rounded-3 p-5 text-center">
+    <h3 class="h5 fw-bold">No posts yet</h3>
+    <p class="text-secondary mb-0">Be the first to share something on campus.</p>
+  </div>
+<% end %>

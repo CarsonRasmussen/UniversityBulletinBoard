@@ -34,26 +34,14 @@ cd "$(dirname "$0")/.."
 
 echo "Installing dependencies and running tests..."
 bundle install
+RAILS_ENV=test bundle exec rails db:prepare
 PARALLEL_WORKERS=1 bundle exec rails test
 
 echo "Packaging code..."
 ARCHIVE="$(mktemp /tmp/bulletin-board.XXXXXX.tar.gz)"
 trap 'rm -f "$ARCHIVE"' EXIT
 
-tar -czf "$ARCHIVE" \
-  --exclude='./.git' \
-  --exclude='./.env*' \
-  --exclude='*.pem' \
-  --exclude='./config/master.key' \
-  --exclude='./config/credentials/*.key' \
-  --exclude='./.kamal' \
-  --exclude='./.bundle' \
-  --exclude='./vendor/bundle' \
-  --exclude='./log' \
-  --exclude='./tmp' \
-  --exclude='./storage' \
-  --exclude='./public/assets' \
-  .
+bash deploy/package.sh "$ARCHIVE"
 
 echo "Copying code to EC2..."
 scp -i "$KEY" "$ARCHIVE" "ubuntu@$HOST:bulletin-board.tar.gz"
@@ -96,7 +84,7 @@ REMOTE
 
 echo "Checking the live app..."
 for attempt in {1..12}; do
-  if curl --fail --silent --max-time 5 \
+  if curl --fail --silent --location --max-time 5 \
     "http://$HOST/up" >/dev/null; then
     echo "Deployment successful: http://$HOST/"
     exit 0

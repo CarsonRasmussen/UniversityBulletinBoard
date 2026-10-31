@@ -1,0 +1,10 @@
+<% content_for :title, "Posts | University Bulletin Board" %>
+<section class="welcome-section">
+  <h1>Campus posts</h1>
+  <%= link_to "Create post", new_post_path, class: "create-button" %>
+</section>
+<%= render "list", posts: @posts %>
+<nav class="posts-pagination" aria-label="Posts pages">
+  <% if @page > 1 %><%= link_to "Previous", posts_path(page: @page - 1), class: "btn btn-outline-primary" %><% end %>
+  <% if @next_page %><%= link_to "Next", posts_path(page: @page + 1), class: "btn btn-outline-primary" %><% end %>
+</nav>

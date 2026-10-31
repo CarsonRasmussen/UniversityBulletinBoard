@@ -26,12 +26,12 @@
 
         <div class="site-navigation">
           <%= link_to "Home", root_path,
-                      class: "navigation-link active",
-                      aria: { current: "page" } %>
+                      class: "navigation-link #{'active' if controller_name == 'home'}",
+                      aria: { current: ("page" if controller_name == "home") } %>
 
-          <button class="navigation-link" disabled>Posts</button>
+          <%= link_to "Posts", posts_path, class: "navigation-link #{'active' if controller_name == 'posts' && action_name != 'new' && action_name != 'create'}" %>
           <button class="navigation-link" disabled>Search</button>
-          <button class="navigation-link" disabled>Create Post</button>
+          <%= link_to "Create Post", new_post_path, class: "navigation-link #{'active' if controller_name == 'posts' && %w[new create].include?(action_name)}" %>
 
           <% if current_user %>
             <span class="navigation-link"><%= current_user.name %></span>

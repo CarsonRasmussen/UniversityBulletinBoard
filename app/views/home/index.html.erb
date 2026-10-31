@@ -8,9 +8,7 @@
     </p>
   </div>
 
-  <button class="create-button" disabled>
-    <span aria-hidden="true">＋</span> Create post
-  </button>
+  <%= link_to "Create post", new_post_path, class: "create-button" %>
 </section>
 
 <section class="discovery-section" aria-label="Find campus posts">
@@ -43,18 +41,11 @@
   </div>
 </section>
 
-<section aria-labelledby="popular-heading">
+<section aria-labelledby="latest-heading">
   <div class="posts-heading mb-4">
-    <h2 id="popular-heading">Popular on campus</h2>
-    <button class="view-all" disabled>
-      View all posts &rarr;
-    </button>
+    <h2 id="latest-heading">Latest on campus</h2>
+    <%= link_to "View all posts →", posts_path, class: "view-all" %>
   </div>
 
-  <div class="bg-white border rounded-3 p-5 text-center">
-    <h3 class="h5 fw-bold">No posts yet</h3>
-    <p class="text-secondary mb-0">
-      Campus posts will appear here once students start sharing.
-    </p>
-  </div>
+  <%= render "posts/list", posts: @posts %>
 </section>

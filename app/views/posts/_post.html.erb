@@ -1,0 +1,14 @@
+<article class="post-card">
+  <% if post.image.attached? %>
+    <%= image_tag post.image, alt: "Image for #{post.title}", class: "post-image", loading: "lazy" %>
+  <% end %>
+  <div class="post-content">
+    <span class="post-category <%= post.category.downcase %>"><%= post.category %></span>
+    <h3><%= link_to post.title, post %></h3>
+    <p class="post-description"><%= truncate(post.description, length: 180) %></p>
+    <p class="post-author">
+      <span><%= post.user.name %></span>
+      <time datetime="<%= post.created_at.iso8601 %>" class="post-time"><%= post.created_at.strftime("%b %-d, %Y") %></time>
+    </p>
+  </div>
+</article>

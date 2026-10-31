@@ -1,0 +1,29 @@
+<% content_for :title, "Create post | University Bulletin Board" %>
+<section class="auth-panel post-form">
+  <h1>Create post</h1>
+  <% if @post.errors.any? %>
+    <div class="alert alert-danger" role="alert">
+      <ul class="mb-0">
+        <% @post.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+  <%= form_with model: @post do |form| %>
+    <%= form.label :title %>
+    <%= form.text_field :title, required: true, maxlength: 150 %>
+    <%= form.label :description %>
+    <%= form.text_area :description, required: true, maxlength: 10000, rows: 8 %>
+    <%= form.label :category %>
+    <%= form.select :category, Post::CATEGORIES, { prompt: "Choose a category" }, required: true %>
+    <%= form.label :image, "Image (optional)" %>
+    <%= form.file_field :image, accept: Post::IMAGE_TYPES.join(","), aria: { describedby: "image-help" } %>
+    <p id="image-help" class="form-text">JPG, PNG, or WebP. Maximum 5 MB.</p>
+    <% if @post.image.attached? && @post.errors.any? %>
+      <p class="form-text">Choose your image again before submitting.</p>
+    <% end %>
+    <%= form.submit "Create post", class: "btn btn-primary" %>
+    <%= link_to "Cancel", posts_path, class: "btn btn-outline-secondary mt-3" %>
+  <% end %>
+</section>

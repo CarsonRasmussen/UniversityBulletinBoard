@@ -1,0 +1,16 @@
+<% content_for :title, "#{@post.title} | University Bulletin Board" %>
+<%= link_to "Back to posts", posts_path, class: "d-inline-block mb-3" %>
+<article class="post-detail post-card">
+  <div class="post-content">
+    <span class="post-category <%= @post.category.downcase %>"><%= @post.category %></span>
+    <h1><%= @post.title %></h1>
+    <p class="post-author">
+      <span>Posted by <%= @post.user.name %></span>
+      <time datetime="<%= @post.created_at.iso8601 %>"><%= @post.created_at.strftime("%b %-d, %Y at %H:%M") %></time>
+    </p>
+  </div>
+  <% if @post.image.attached? %>
+    <%= image_tag @post.image, alt: "Image for #{@post.title}", class: "post-detail-image" %>
+  <% end %>
+  <div class="post-content post-body"><%= simple_format(h(@post.description)) %></div>
+</article>

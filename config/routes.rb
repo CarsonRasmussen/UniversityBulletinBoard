@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  resources :posts, only: [ :index, :show, :new, :create ]
   get "signup", to: "registrations#new"
   post "signup", to: "registrations#create"
   get "login", to: "sessions#new"
