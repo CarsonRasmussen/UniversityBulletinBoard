@@ -40,6 +40,10 @@
 .post-detail-image { display: block; width: 100%; max-height: 600px; object-fit: contain; }
 .post-body { line-height: 1.7; }
 .posts-pagination { display: flex; justify-content: center; gap: 16px; margin-top: 24px; }
+.post-edit-image { display: block; max-width: 100%; max-height: 240px; object-fit: contain; }
+.post-management { display: flex; flex-wrap: wrap; gap: 12px; padding: 0 20px 20px; }
+.post-form .form-check label { margin: 0; }
+.post-form .form-check input[type="checkbox"] { width: auto; padding: 0; }
 
 * {
   box-sizing: border-box;

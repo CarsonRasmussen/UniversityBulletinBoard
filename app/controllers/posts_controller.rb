@@ -1,5 +1,8 @@
 class PostsController < ApplicationController
-  before_action :require_verified_student, only: [ :new, :create ]
+  before_action :require_verified_student, except: [ :index, :show ]
+  before_action :set_post, only: [ :show, :edit, :update, :destroy ]
+  before_action :require_post_author, only: [ :edit, :update, :destroy ]
+  rescue_from ActiveRecord::RecordNotFound, with: :post_not_found
 
   def index
     @page = [ params[:page].to_i, 1 ].max
@@ -9,9 +12,6 @@ class PostsController < ApplicationController
   end
 
   def show
-    @post = Post.find(params[:id])
-  rescue ActiveRecord::RecordNotFound
-    render plain: "Post not found.", status: :not_found
   end
 
   def new
@@ -19,7 +19,7 @@ class PostsController < ApplicationController
   end
 
   def create
-    @post = current_user.posts.build(params.require(:post).permit(:title, :description, :category, :image))
+    @post = current_user.posts.build(post_params)
     if @post.save
       redirect_to @post, notice: "Post created."
     else
@@ -27,9 +27,54 @@ class PostsController < ApplicationController
     end
   end
 
+  def edit
+  end
+
+  def update
+    attributes = post_params
+    # Browsers submit an empty file field when no replacement is selected.
+    attributes.delete(:image) if attributes[:image].blank?
+    if ActiveModel::Type::Boolean.new.cast(params[:post][:remove_image]) && !attributes.key?(:image)
+      @post.image = nil
+    end
+
+    if @post.update(attributes)
+      redirect_to @post, notice: "Post updated.", status: :see_other
+    else
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  def destroy
+    @post.destroy!
+    redirect_to posts_path, notice: "Post deleted.", status: :see_other
+  end
+
   private
 
   def require_verified_student
-    redirect_to login_path, alert: "Please log in to create a post." unless current_user
+    return if current_user
+
+    message = %w[new create].include?(action_name) ? "Please log in to create a post." : "Please log in to edit or delete posts."
+    redirect_to login_path, alert: message
+  end
+
+  def set_post
+    @post = Post.find(params[:id])
+    @existing_image = @post.image.blob if @post.image.attached?
+  end
+
+  def require_post_author
+    unless @post.user_id == current_user.id
+      render plain: "You can only edit or delete your own posts.", status: :forbidden
+    end
+  end
+
+  def post_params
+    params.require(:post).permit(:title, :description, :category, :image)
+  end
+
+  def post_not_found
+    render plain: "Post not found.", status: :not_found
   end
 end

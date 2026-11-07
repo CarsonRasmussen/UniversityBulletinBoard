@@ -13,4 +13,12 @@
     <%= image_tag @post.image, alt: "Image for #{@post.title}", class: "post-detail-image" %>
   <% end %>
   <div class="post-content post-body"><%= simple_format(h(@post.description)) %></div>
+  <% if current_user && @post.user_id == current_user.id %>
+    <div class="post-management">
+      <%= link_to "Edit post", edit_post_path(@post), class: "btn btn-outline-primary" %>
+      <%= button_to "Delete post", post_path(@post), method: :delete,
+            class: "btn btn-outline-danger",
+            form: { data: { turbo_confirm: "Delete this post? This cannot be undone." } } %>
+    </div>
+  <% end %>
 </article>

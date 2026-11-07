@@ -122,10 +122,11 @@ class PostsTest < ActionDispatch::IntegrationTest
   test "JPEG PNG and WebP are accepted based on uploaded contents" do
     login
     { "jpg" => "image/jpeg", "png" => "image/png", "webp" => "image/webp" }.each do |extension, content_type|
-      image = fixture_file_upload("campus.#{extension}", content_type)
+      image = fixture_file_upload("campus.#{extension}", content_type, true)
       assert_difference("Post.count", 1) { post posts_path, params: { post: post_attributes.merge(image: image) } }
       assert_redirected_to post_path(Post.last)
       assert_equal content_type, Post.last.image.blob.content_type
+      assert_equal File.binread(file_fixture("campus.#{extension}")), Post.last.image.download
     end
   end
 

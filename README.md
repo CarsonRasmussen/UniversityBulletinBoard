@@ -6,7 +6,7 @@ A campus bulletin board for university students to share events, clubs, announce
 **Course:** CS 408 — Full Stack Web Development  
 **Application address:** http://18.237.129.155/
 
-Checkpoint 3 has been tested locally; its live deployment has not been verified.
+Checkpoint 4 is implemented in the working version; its live deployment has not been verified.
 
 ## Tech stack
 
@@ -20,9 +20,10 @@ Each Git tag is a snapshot of the entire project at that checkpoint.
 | --- | --- |
 | [cp1](https://github.com/CarsonRasmussen/UniversityBulletinBoard/tree/cp1) | Rails setup, SQLite, Bootstrap, homepage, shared header, footer, and navigation. |
 | [cp2](https://github.com/CarsonRasmussen/UniversityBulletinBoard/tree/cp2) | Database tables, student registration, university email verification, login/logout, basic EC2 deployment, and initial startup scripts. |
-| Checkpoint 3 (working version, not tagged) | Create posts, optional JPEG/PNG/WebP uploads, public posts list and details, and recent homepage posts. |
+| [cp3](https://github.com/CarsonRasmussen/UniversityBulletinBoard/tree/cp3) | Create posts, optional JPEG/PNG/WebP uploads, public posts list and details, and recent homepage posts. |
+| Checkpoint 4 (working version, not tagged) | Edit and delete your own posts, with controller permissions and optional image replacement/removal. |
 
-Checkpoint 3 in the current working version adds creating posts, optional image uploads, the posts page, and individual post details. The homepage shows the four newest posts. Editing/deleting posts, search, comments, likes, and saved posts are planned for later checkpoints.
+The current version includes Checkpoints 1–4. The homepage shows the four newest posts. Search, comments, likes, and saved posts are planned for later checkpoints.
 
 ## Requirements
 
@@ -46,7 +47,7 @@ Open **http://localhost:3000**. Press **Ctrl + C** to stop the server.
 If port 3000 is occupied, run `PORT=3100 ./start.sh` in Bash. The server and
 local verification links will both use port 3100.
 
-To inspect a previous checkpoint, use `git checkout cp1` or `git checkout cp2` with a clean working tree. Each tag contains its own version of the application and README. The instructions below describe the current working version.
+To inspect a previous checkpoint, use `git checkout cp1`, `git checkout cp2`, or `git checkout cp3` with a clean working tree. Each tag contains its own version of the application and README. The instructions below describe the current working version.
 
 ## Student accounts
 
@@ -92,9 +93,11 @@ RAILS_ENV=test bundle exec rails db:prepare
 bundle exec rails test
 ```
 
-Tests cover student accounts, email delivery failures, post creation permissions, required fields, category validation, image uploads and retrieval, invalid images, escaped post content, and pagination. Tests do not send real emails.
+Tests cover student accounts, email delivery failures, post creation permissions, required fields, category validation, image uploads and retrieval, invalid images, escaped post content, and pagination. Checkpoint 4 adds direct-request authorization checks, successful and failed edits, image retention/replacement/removal, and deletion with dependent-record and upload cleanup. Tests do not send real emails.
 
 Checkpoint 3 local validation: **27 tests, 456 assertions, 0 failures, 0 errors**.
+
+Checkpoint 4 local validation: **38 tests, 588 assertions, 0 failures, 0 errors**.
 
 Additional local checks used an isolated source copy without existing databases,
 uploads, or credentials: `./start.sh` prepared the database and served `/posts`;
@@ -121,10 +124,39 @@ new uploads use Active Storage attachments.
 
 Categories are **Events**, **Clubs**, **Announcements**, and **Discussions**.
 The homepage retains its existing layout and shows the four newest database
-posts. Search, filters, comments, likes, saves, and post editing/deletion remain
-outside this checkpoint.
+posts. Search, filters, comments, likes, and saves remain outside the current
+checkpoint.
 
 Run `bundle exec rails db:prepare` after updating to install the new tables.
+
+## Manage your posts (Checkpoint 4)
+
+1. Log in with the verified account that created the post and open its detail page.
+2. Choose **Edit post** to update the title, description, or category. Leave the
+   image field blank to keep the current image, select a replacement, or check
+   **Remove current image**. A replacement takes priority if both are selected.
+3. Choose **Save changes**. Validation errors keep entered text and leave the
+   saved post and its original image intact. Reselect a replacement file after
+   an invalid submission. **Cancel** returns to the post without saving.
+4. Choose **Delete post** and confirm the browser prompt to permanently delete
+   the post. Deletion also removes dependent comments, likes, and saves. Active
+   Storage queues cleanup of the uploaded image through the configured job adapter.
+
+   In production, run a Solid Queue worker for image analysis and cleanup.
+   On the existing single-server EC2 setup, add `SOLID_QUEUE_IN_PUMA=true` to
+   `/etc/bulletin-board.env`, then restart `bulletin-board`. The existing Puma
+   configuration starts the worker when that setting is enabled.
+
+Only the author sees these controls. The controller also blocks another user's
+direct edit, update, or delete requests with a 403 response. Guests and accounts
+whose email verification has been revoked must log in with a verified account.
+Authors cannot be changed through submitted parameters. Browsing stays public.
+Checkpoint 4 requires no additional database migrations.
+
+To manually check permissions, create a post with one account, then sign in
+with a second verified account and try opening `/posts/POST_ID/edit`. It should
+be forbidden. Try editing with a missing required field to confirm the original
+post is preserved, then save a valid change and delete a test post.
 
 ## EC2 deployment
 
@@ -153,7 +185,7 @@ over a customized nginx/HTTPS configuration.
 
 4. Configure a valid TLS certificate and nginx HTTPS support before setting `APP_PROTOCOL=https`. The included nginx configuration serves HTTP only. The current class demo uses HTTP: use a unique test password, and enable HTTPS before collecting real account credentials.
 
-### Update an existing EC2 installation for Checkpoint 3
+### Update an existing EC2 installation for Checkpoints 3–4
 
 1. Connect to the server:
 
@@ -203,6 +235,10 @@ over a customized nginx/HTTPS configuration.
    category, creation date, text, image, and homepage links. Restart the service
    and verify that the uploaded image is still visible. Check it again after
    the next deployment.
+
+   For Checkpoint 4, edit a post as its author and confirm a second account
+   cannot edit it. Delete a test post and confirm it disappears from the list,
+   homepage, and detail URL. These live checks have not been performed here.
 
 The archive is built by `deploy/package.sh`. It excludes local `storage/`,
 databases, logs, temporary files, environment files, AWS configuration, and keys.
