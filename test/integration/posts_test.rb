@@ -177,13 +177,13 @@ class PostsTest < ActionDispatch::IntegrationTest
     assert_select ".post-card", count: 4
   end
 
-  test "homepage and navigation link to posts and keep later features disabled" do
+  test "homepage and navigation link to posts search and categories" do
     get root_path
-    assert_select "h2", "Latest on campus"
+    assert_select "h2", "Popular on campus"
     assert_select "a[href='#{posts_path}']", text: /View all posts/
     assert_select "a[href='#{posts_path}']", text: "Posts"
     assert_select "a[href='#{new_post_path}']", text: "Create Post"
-    assert_select "input[type=search][disabled]"
-    assert_select ".category-tabs button[disabled]", count: 4
+    assert_select "input[type=search]:not([disabled])"
+    assert_select ".category-tabs a", count: 5
   end
 end

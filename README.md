@@ -6,7 +6,7 @@ A campus bulletin board for university students to share events, clubs, announce
 **Course:** CS 408 — Full Stack Web Development  
 **Application address:** http://18.237.129.155/
 
-Checkpoint 4 is implemented in the working version; its live deployment has not been verified.
+Checkpoint 5 is implemented in the working version; its live deployment has not been verified.
 
 ## Tech stack
 
@@ -21,9 +21,10 @@ Each Git tag is a snapshot of the entire project at that checkpoint.
 | [cp1](https://github.com/CarsonRasmussen/UniversityBulletinBoard/tree/cp1) | Rails setup, SQLite, Bootstrap, homepage, shared header, footer, and navigation. |
 | [cp2](https://github.com/CarsonRasmussen/UniversityBulletinBoard/tree/cp2) | Database tables, student registration, university email verification, login/logout, basic EC2 deployment, and initial startup scripts. |
 | [cp3](https://github.com/CarsonRasmussen/UniversityBulletinBoard/tree/cp3) | Create posts, optional JPEG/PNG/WebP uploads, public posts list and details, and recent homepage posts. |
-| Checkpoint 4 (working version, not tagged) | Edit and delete your own posts, with controller permissions and optional image replacement/removal. |
+| [cp4](https://github.com/CarsonRasmussen/UniversityBulletinBoard/tree/cp4) | Edit and delete your own posts, with controller permissions and optional image replacement/removal. |
+| Checkpoint 5 (working version, not tagged) | Search, category filters, comments, likes, popular posts, and personal saved/liked lists. |
 
-The current version includes Checkpoints 1–4. The homepage shows the four newest posts. Search, comments, likes, and saved posts are planned for later checkpoints.
+The current version includes Checkpoints 1–5. The homepage shows the four most-liked posts, with newer posts first when like counts tie.
 
 ## Requirements
 
@@ -99,6 +100,12 @@ Checkpoint 3 local validation: **27 tests, 456 assertions, 0 failures, 0 errors*
 
 Checkpoint 4 local validation: **38 tests, 588 assertions, 0 failures, 0 errors**.
 
+Checkpoint 5 local validation: **48 tests, 774 assertions, 0 failures, 0 errors**.
+New coverage includes combined search/filter pagination, literal wildcard searches,
+like-based ranking, comment validation and escaping, verified-account enforcement,
+author spoofing prevention, duplicate likes/saves, and private saved/liked lists.
+Ruby style checks passed (51 files); Brakeman reported no security warnings.
+
 Additional local checks used an isolated source copy without existing databases,
 uploads, or credentials: `./start.sh` prepared the database and served `/posts`;
 the full tests passed; upgrading populated Checkpoint 2 tables preserved the
@@ -123,9 +130,9 @@ along with the database. The old text image column is preserved as `legacy_image
 new uploads use Active Storage attachments.
 
 Categories are **Events**, **Clubs**, **Announcements**, and **Discussions**.
-The homepage retains its existing layout and shows the four newest database
-posts. Search, filters, comments, likes, and saves remain outside the current
-checkpoint.
+The homepage retains its existing layout and showed the four newest database
+posts in the Checkpoint 3 snapshot. Checkpoint 5 adds search, filters, comments,
+likes, and saves, and ranks homepage posts by likes.
 
 Run `bundle exec rails db:prepare` after updating to install the new tables.
 
@@ -158,6 +165,48 @@ with a second verified account and try opening `/posts/POST_ID/edit`. It should
 be forbidden. Try editing with a missing required field to confirm the original
 post is preserved, then save a valid change and delete a test post.
 
+## Discover and interact (Checkpoint 5)
+
+- Search titles and descriptions from the homepage or **Search** navigation link.
+  Searches match a literal phrase (up to 200 characters); ordinary English text
+  matches regardless of capitalization. `%` and `_` are treated as literal text.
+- Choose **Events**, **Clubs**, **Announcements**, or **Discussions** to filter.
+  Search and category can be combined; **All posts** clears the category while
+  keeping the search. Clear the search field and submit to remove the search.
+  Results are newest first, 12 per page, and filters persist across pages.
+- The homepage shows four **Popular on campus** posts ranked by total likes.
+  Ties use newest creation time, then post ID. Posts with no likes remain eligible.
+- Open a post and log in with a verified student account to comment (1 to 2,000
+  characters), like/unlike, or save/unsave it. Comments are publicly visible in
+  creation order and display names rather than email addresses. Invalid comments
+  show errors and preserve entered text. User content is rendered as text.
+- **Saved** and **Liked** in the navigation show only your own collection, newest
+  posts first, 12 per page. Open a post to remove its like or save. These actions
+  never remove another account's like or save. Repeated requests do not add duplicates.
+- Guests can browse/search and read comments; interacting and viewing personal
+  lists requires verified login. Comment authors come from the session and post
+  IDs from the route, not submitted identity fields.
+
+This checkpoint uses existing tables and requires no new migrations or services.
+Existing upload storage, email settings, and deployment scripts remain applicable.
+
+Run the full suite with `bundle exec rails test`, or only the new coverage with:
+
+```bash
+bundle exec rails test test/integration/post_discovery_test.rb test/integration/post_interactions_test.rb
+```
+
+For a manual check, run `./start.sh` in Bash, create posts in two categories,
+search by a word in a description, and combine the search with a category. Log in,
+comment and like/save a post, then check **Saved**, **Liked**, and the homepage.
+Use a second account to confirm its personal lists are separate. Unlike/unsave
+and confirm the first account's other records remain intact. Log out and verify
+browsing still works while interaction controls request login.
+
+For EC2, follow the existing update instructions below, then perform these same
+checks on the live site. No Checkpoint 5 deployment or live email test has been
+performed here; deployment and checkpoint tagging remain separate steps.
+
 ## EC2 deployment
 
 The scripts target Ubuntu with an `ubuntu` user and install the app at `/var/www/university-bulletin-board`.
@@ -185,7 +234,7 @@ over a customized nginx/HTTPS configuration.
 
 4. Configure a valid TLS certificate and nginx HTTPS support before setting `APP_PROTOCOL=https`. The included nginx configuration serves HTTP only. The current class demo uses HTTP: use a unique test password, and enable HTTPS before collecting real account credentials.
 
-### Update an existing EC2 installation for Checkpoints 3–4
+### Update an existing EC2 installation for Checkpoints 3–5
 
 1. Connect to the server:
 

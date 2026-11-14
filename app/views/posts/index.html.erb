@@ -1,10 +1,18 @@
 <% content_for :title, "Posts | University Bulletin Board" %>
 <section class="welcome-section">
-  <h1>Campus posts</h1>
+  <h1><%= @collection_title || "Campus posts" %></h1>
   <%= link_to "Create post", new_post_path, class: "create-button" %>
 </section>
-<%= render "list", posts: @posts %>
+<%= render "discovery" unless @collection_title %>
+<% if @posts.empty? && (@collection_title || @query.present? || @category.present?) %>
+  <div class="bg-white border rounded-3 p-5 text-center">
+    <h3 class="h5 fw-bold"><%= @collection_title ? "No #{@collection_title.downcase} yet" : "No matching posts" %></h3>
+    <%= link_to "Browse all posts", posts_path %>
+  </div>
+<% else %>
+  <%= render "list", posts: @posts %>
+<% end %>
 <nav class="posts-pagination" aria-label="Posts pages">
-  <% if @page > 1 %><%= link_to "Previous", posts_path(page: @page - 1), class: "btn btn-outline-primary" %><% end %>
-  <% if @next_page %><%= link_to "Next", posts_path(page: @page + 1), class: "btn btn-outline-primary" %><% end %>
+  <% if @page > 1 %><%= link_to "Previous", url_for(action: action_name, page: @page - 1, q: @query, category: @category), class: "btn btn-outline-primary" %><% end %>
+  <% if @next_page %><%= link_to "Next", url_for(action: action_name, page: @page + 1, q: @query, category: @category), class: "btn btn-outline-primary" %><% end %>
 </nav>

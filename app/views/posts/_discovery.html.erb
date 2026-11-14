@@ -1,0 +1,14 @@
+<section class="discovery-section" aria-label="Find campus posts">
+  <%= form_with url: posts_path, method: :get, class: "search-box" do |form| %>
+    <%= form.label :q, "Search campus posts", class: "visually-hidden" %>
+    <%= form.search_field :q, value: @query, maxlength: 200, placeholder: "Search campus posts...", id: "q" %>
+    <%= form.hidden_field :category, value: @category if @category.present? %>
+    <%= form.submit "Search", class: "btn btn-primary" %>
+  <% end %>
+  <nav class="category-tabs" aria-label="Post categories">
+    <%= link_to "All posts", posts_path(q: @query), class: "category-tab #{'selected' if @category.blank?}" %>
+    <% Post::CATEGORIES.each do |category| %>
+      <%= link_to category, posts_path(q: @query, category: category), class: "category-tab #{'selected' if @category == category}" %>
+    <% end %>
+  </nav>
+</section>

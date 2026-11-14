@@ -5,13 +5,27 @@ class PostsController < ApplicationController
   rescue_from ActiveRecord::RecordNotFound, with: :post_not_found
 
   def index
-    @page = [ params[:page].to_i, 1 ].max
-    @posts = Post.includes(:user).with_attached_image.newest_first.offset((@page - 1) * 12).limit(13).to_a
-    @next_page = @posts.length > 12
-    @posts = @posts.first(12)
+    @query = params[:q].to_s.strip.first(200)
+    @category = params[:category].to_s
+    scope = Post.search(@query)
+    scope = scope.where(category: @category) if @category.present?
+    paginate_posts(scope)
+  end
+
+  def saved
+    @collection_title = "Saved posts"
+    paginate_posts(Post.where(id: current_user.saved_posts.select(:post_id)))
+    render :index
+  end
+
+  def liked
+    @collection_title = "Liked posts"
+    paginate_posts(Post.where(id: current_user.likes.select(:post_id)))
+    render :index
   end
 
   def show
+    @comment = Comment.new
   end
 
   def new
@@ -52,10 +66,23 @@ class PostsController < ApplicationController
 
   private
 
+  def paginate_posts(scope)
+    @page = params[:page].to_i.clamp(1, 1_000_000)
+    @posts = scope.includes(:user).with_attached_image.newest_first.offset((@page - 1) * 12).limit(13).to_a
+    @next_page = @posts.length > 12
+    @posts = @posts.first(12)
+  end
+
   def require_verified_student
     return if current_user
 
-    message = %w[new create].include?(action_name) ? "Please log in to create a post." : "Please log in to edit or delete posts."
+    message = if %w[saved liked].include?(action_name)
+      "Please log in to view your saved and liked posts."
+    elsif %w[new create].include?(action_name)
+      "Please log in to create a post."
+    else
+      "Please log in to edit or delete posts."
+    end
     redirect_to login_path, alert: message
   end
 

@@ -125,6 +125,7 @@ button:focus-visible {
 }
 
 .site-navigation {
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -398,6 +399,11 @@ button:focus-visible {
   gap: 9px;
   font-size: 13px;
 }
+
+.category-tab { text-decoration: none; }
+.search-box input[type="search"] { min-width: 0; }
+.search-box input[type="submit"] { flex: 0 0 auto; width: auto; height: 38px; color: white; background: var(--blue); }
+.comment-body { overflow-wrap: anywhere; }
 
 .heart {
   color: #ed344b;

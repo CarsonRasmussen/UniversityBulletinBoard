@@ -30,10 +30,12 @@
                       aria: { current: ("page" if controller_name == "home") } %>
 
           <%= link_to "Posts", posts_path, class: "navigation-link #{'active' if controller_name == 'posts' && action_name != 'new' && action_name != 'create'}" %>
-          <button class="navigation-link" disabled>Search</button>
+          <%= link_to "Search", posts_path(anchor: "q"), class: "navigation-link" %>
           <%= link_to "Create Post", new_post_path, class: "navigation-link #{'active' if controller_name == 'posts' && %w[new create].include?(action_name)}" %>
 
           <% if current_user %>
+            <%= link_to "Saved", saved_posts_path, class: "navigation-link" %>
+            <%= link_to "Liked", liked_posts_path, class: "navigation-link" %>
             <span class="navigation-link"><%= current_user.name %></span>
             <%= button_to "Log out", logout_path, method: :delete, class: "navigation-link" %>
           <% else %>

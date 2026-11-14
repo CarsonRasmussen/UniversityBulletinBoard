@@ -15,6 +15,16 @@ class Post < ApplicationRecord
   validate :acceptable_image
 
   scope :newest_first, -> { order(created_at: :desc, id: :desc) }
+  scope :popular_first, -> {
+    order(Arel.sql("(SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) DESC"), created_at: :desc, id: :desc)
+  }
+
+  def self.search(query)
+    return all if query.blank?
+
+    pattern = "%#{sanitize_sql_like(query)}%"
+    where("posts.title LIKE ? ESCAPE '\\' OR posts.description LIKE ? ESCAPE '\\'", pattern, pattern)
+  end
 
   private
 

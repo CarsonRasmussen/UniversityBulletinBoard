@@ -1,5 +1,11 @@
 Rails.application.routes.draw do
-  resources :posts
+  resources :posts do
+    resources :comments, only: [ :create ]
+    resource :like, only: [ :create, :destroy ]
+    resource :saved_post, only: [ :create, :destroy ]
+  end
+  get "saved_posts", to: "posts#saved", as: :saved_posts
+  get "liked_posts", to: "posts#liked", as: :liked_posts
   get "signup", to: "registrations#new"
   post "signup", to: "registrations#create"
   get "login", to: "sessions#new"
