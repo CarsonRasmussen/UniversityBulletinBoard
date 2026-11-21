@@ -29,4 +29,6 @@ tar -czf "$OUTPUT" \
   --exclude='./tmp' \
   --exclude='./storage' \
   --exclude='./public/assets' \
+  --exclude='__pycache__' \
+  --exclude='*.tar.gz' \
   .

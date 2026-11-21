@@ -6,7 +6,8 @@ A campus bulletin board for university students to share events, clubs, announce
 **Course:** CS 408 — Full Stack Web Development  
 **Application address:** http://18.237.129.155/
 
-Checkpoint 5 is implemented in the working version; its live deployment has not been verified.
+Checkpoint 6 is deployed on EC2. The live update and automatic startup after a
+reboot were verified on November 20, 2026.
 
 ## Tech stack
 
@@ -22,9 +23,10 @@ Each Git tag is a snapshot of the entire project at that checkpoint.
 | [cp2](https://github.com/CarsonRasmussen/UniversityBulletinBoard/tree/cp2) | Database tables, student registration, university email verification, login/logout, basic EC2 deployment, and initial startup scripts. |
 | [cp3](https://github.com/CarsonRasmussen/UniversityBulletinBoard/tree/cp3) | Create posts, optional JPEG/PNG/WebP uploads, public posts list and details, and recent homepage posts. |
 | [cp4](https://github.com/CarsonRasmussen/UniversityBulletinBoard/tree/cp4) | Edit and delete your own posts, with controller permissions and optional image replacement/removal. |
-| Checkpoint 5 (working version, not tagged) | Search, category filters, comments, likes, popular posts, and personal saved/liked lists. |
+| [cp5](https://github.com/CarsonRasmussen/UniversityBulletinBoard/tree/cp5) | Search, category filters, comments, likes, popular posts, and personal saved/liked lists. |
+| `cp6` | Installation/configuration scripts, protected production settings, deployment backups, and verified EC2 startup after reboot. |
 
-The current version includes Checkpoints 1–5. The homepage shows the four most-liked posts, with newer posts first when like counts tie.
+The current version includes Checkpoints 1–6. The homepage shows the four most-liked posts, with newer posts first when like counts tie.
 
 ## Requirements
 
@@ -204,14 +206,73 @@ and confirm the first account's other records remain intact. Log out and verify
 browsing still works while interaction controls request login.
 
 For EC2, follow the existing update instructions below, then perform these same
-checks on the live site. No Checkpoint 5 deployment or live email test has been
-performed here; deployment and checkpoint tagging remain separate steps.
+checks on the live site. The Checkpoint 6 deployment includes these features;
+live email delivery still needs a manual check. Checkpoint tagging remains separate.
 
 ## EC2 deployment
 
 The scripts target Ubuntu with an `ubuntu` user and install the app at `/var/www/university-bulletin-board`.
-For an existing server, use the update steps below. Do not rerun initial setup
-over a customized nginx/HTTPS configuration.
+For an existing server, use the update steps below. Setup and configuration preserve
+an existing nginx site and environment file; initial setup only installs nginx's
+provided HTTP site when no app site exists. The scripts target x86_64 Ubuntu EC2.
+
+### Checkpoint 6 scripts and validation
+
+- `setup-ec2.sh` installs dependencies, Ruby 4.0.2, and Bundler 4.0.6. The Ruby
+  archive is checked against the [official release checksum](https://www.ruby-lang.org/en/news/2026/03/16/ruby-4-0-2-released/).
+- `configure-ec2.sh` installs the application and preparation services, enables
+  Rails/nginx at boot, and preserves existing nginx/HTTPS and email settings.
+- `prepare.sh` validates production settings, installs locked gems, prepares
+  all production databases, and compiles assets. It runs as `ubuntu` through
+  `bulletin-board-prepare.service`, with systemd loading the same root-owned
+  environment file as the running application. Do not source that file as shell code.
+- The application service validates settings before boot and enables the Puma
+  Solid Queue worker for image analysis and cleanup. It restarts after a failure.
+- `deploy.sh` tests locally, packages code, and serializes server updates. It
+  stops Rails before backing up the application and storage, then extracts code,
+  updates service definitions, prepares the application, starts Rails, and checks
+  local/public health. Existing nginx/HTTPS settings are not replaced.
+- `verify-ec2.sh` checks that Rails and nginx are enabled at boot, nginx is active,
+  and Rails responds at `/up`. With a previous boot ID argument, it also requires
+  the boot ID to have changed. It does not reboot the server itself.
+
+Local validation: **48 Rails tests / 774 assertions passed**, **13 deployment tests
+passed**, and Ruby style checks passed (52 files). An isolated production copy
+successfully prepared databases, compiled assets, booted Rails, served `/up`
+without an HTTPS redirect, redirected normal HTTP pages to HTTPS, served `/posts`
+over HTTPS, and loaded the queue schema. Synthetic settings were used; no email
+was sent. These Windows checks do not exercise Ubuntu installation, actual systemd
+services, or the running Solid Queue worker.
+
+Run the isolated deployment tests with Python 3.12+, Ruby, and Bash (Git Bash on Windows):
+
+```bash
+python -m unittest discover -s test -p deployment_test.py -v
+```
+
+The tests mock privileged/server commands; they never connect to EC2. They cover
+configuration validation without secret output, backup/preparation failures,
+deployment ordering and locking, packaging/storage preservation, preserving nginx
+and environment settings, and the reboot-ID check.
+
+EC2 deployment and reboot verification succeeded on November 20, 2026:
+
+- A stopped-application backup was retained at
+  `/var/backups/bulletin-board/app-20261120-223817-105896.tar.gz`.
+- Production database preparation and asset compilation completed. A Ruby version
+  check initially rejected the `ruby-` prefix in `.ruby-version`; it was corrected,
+  regression-tested, and uploaded before preparation resumed successfully.
+- After one reboot, the boot ID changed and Rails, nginx, and the Solid Queue
+  supervisor/worker started automatically without a manual service start.
+- Public health, homepage, posts, search, login, signup, and the existing post detail
+  page responded successfully. Eight public assets were unchanged after reboot.
+  No uploaded image was present on the public post, so live image retrieval was not tested.
+- Existing account, post, comment, like, and save data matched the backup, excluding
+  update timestamps that can be touched by image analysis. Stored file bytes matched.
+
+A fresh Ubuntu installation was not performed. Real email delivery, new uploads, and authenticated
+create/edit/delete/comment/like/save browser flows were not retested during this
+deployment; their automated Rails tests passed. Deployment and Git publishing are separate steps.
 
 ### First-time server setup
 
@@ -234,7 +295,7 @@ over a customized nginx/HTTPS configuration.
 
 4. Configure a valid TLS certificate and nginx HTTPS support before setting `APP_PROTOCOL=https`. The included nginx configuration serves HTTP only. The current class demo uses HTTP: use a unique test password, and enable HTTPS before collecting real account credentials.
 
-### Update an existing EC2 installation for Checkpoints 3–5
+### Update an existing EC2 installation for Checkpoints 3–6
 
 1. Connect to the server:
 
@@ -242,7 +303,11 @@ over a customized nginx/HTTPS configuration.
    ssh -i /path/to/key.pem ubuntu@YOUR_EC2_HOST
    ```
 
-2. Back up the database and uploaded images together before migrating:
+2. The deployment script now creates a stopped-application backup automatically
+   in `/var/backups/bulletin-board/app-TIMESTAMP-PID.tar.gz`. It contains code,
+   databases, and uploaded images; gems, logs, and temporary files are excluded.
+   Keep sufficient free disk space and retain backups until the update is verified.
+   For an additional manual storage backup:
 
    ```bash
    sudo install -d -m 700 /var/backups/bulletin-board
@@ -254,6 +319,12 @@ over a customized nginx/HTTPS configuration.
 
    If the backup fails, fix it before deploying. Keep the existing
    `/etc/bulletin-board.env` and `SECRET_KEY_BASE`.
+
+   Use `sudoedit /etc/bulletin-board.env` to check the example's required settings.
+   `APP_HOST` must match the public hostname/IP, `APP_PROTOCOL` must match the site's
+   HTTP/HTTPS configuration, and `SOLID_QUEUE_IN_PUMA=true` enables background jobs.
+   The service defaults the worker setting to true if it is absent. Keep settings
+   as `KEY=value` lines (systemd syntax), without `export` or shell substitutions.
 
 3. On EC2, run `sudoedit /etc/nginx/sites-available/bulletin-board` and add
    `client_max_body_size 6m;` inside the app's existing server block (including
@@ -273,8 +344,9 @@ over a customized nginx/HTTPS configuration.
 
    The script uploads the working directory. Review `git status --short` first;
    a checkpoint tag is not created by deployment. It prepares the test database,
-   runs tests, uploads code, installs gems, applies migrations, compiles assets,
-   restarts Rails, and checks `/up` while following HTTP/HTTPS redirects.
+   runs tests, uploads code, backs up the stopped app, installs service definitions
+   and gems, applies migrations, compiles assets, restarts Rails, and checks `/up`.
+   No pushes or checkpoint tags are created. Expect downtime during preparation.
 
    A successful health check does not confirm email delivery. Test signup,
    verification, login, and logout on the live site after deployment.
@@ -319,7 +391,58 @@ After changing the environment file, restart Rails:
 sudo systemctl restart bulletin-board
 ```
 
-To check automatic startup, run `sudo reboot`, wait for the instance to restart, reconnect, and check the service and website again.
+To verify a reboot, first save the current boot ID in your notes:
+
+```bash
+cat /proc/sys/kernel/random/boot_id
+sudo reboot
+```
+
+SSH disconnecting is expected. Wait for the instance to return, reconnect, then run:
+
+```bash
+cd /var/www/university-bulletin-board
+bash deploy/verify-ec2.sh PREVIOUS_BOOT_ID
+curl --fail http://127.0.0.1:3000/up
+```
+
+Replace `PREVIOUS_BOOT_ID` with the saved value. Do not manually start Rails before
+this check: the goal is to prove systemd started it at boot. Check the public site
+from your own computer as well. Verify signup/email links, login, post images,
+editing, comments, likes, and saved posts, and confirm a previously uploaded image
+survived. Confirm image cleanup jobs finish after deleting a disposable image post.
+
+If you stop/start the EC2 instance instead of rebooting it, its public address may
+change unless an Elastic IP is assigned. Update the host configuration if needed.
+
+### Failed deployment recovery
+
+If backup creation fails before code changes, deployment attempts to restart the
+old service. If code extraction or preparation fails, it leaves the application
+stopped and prints the backup path; it does not guess whether database rollback
+is safe. Inspect these services without printing the environment file:
+
+```bash
+sudo journalctl -u bulletin-board-prepare -u bulletin-board -n 50 --no-pager
+```
+
+For a configuration/dependency issue, correct it and rerun deployment, or after
+fixing the server settings run:
+
+```bash
+sudo systemctl start bulletin-board-prepare
+sudo systemctl reset-failed bulletin-board
+sudo systemctl start bulletin-board
+bash deploy/verify-ec2.sh
+```
+
+If rolling back instead, stop Rails and restore matching code **and storage** from
+the same backup, preserving the failed state separately first. Reinstall the
+matching version's gems and service definition before restarting. Do not restore
+an old database into a running application or delete server storage to fix startup.
+Automatic rollback is deliberately not performed after migrations. If only the
+public health check fails, Rails may already be running: check nginx, TLS, and EC2
+network rules before deciding to restore a backup.
 
 ## Configuration and data
 

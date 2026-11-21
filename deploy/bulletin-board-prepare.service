@@ -1,0 +1,16 @@
+[Unit]
+Description=Prepare University Bulletin Board database and assets
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/var/www/university-bulletin-board
+Environment=RAILS_ENV=production
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+Environment=SOLID_QUEUE_IN_PUMA=true
+EnvironmentFile=/etc/bulletin-board.env
+ExecStart=/bin/bash deploy/prepare.sh
+TimeoutStartSec=1800
+UMask=0077

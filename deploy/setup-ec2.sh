@@ -9,6 +9,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 export PATH="/usr/local/bin:/usr/bin:/bin"
 export DEBIAN_FRONTEND=noninteractive
+id ubuntu >/dev/null 2>&1 || { echo "This installer requires the Ubuntu EC2 user 'ubuntu'."; exit 1; }
 
 echo "Installing server tools..."
 apt-get update
@@ -27,7 +28,8 @@ if [ "$(/usr/local/bin/ruby -e 'print RUBY_VERSION' 2>/dev/null || true)" != "4.
     https://cache.ruby-lang.org/pub/ruby/4.0/ruby-4.0.2.tar.gz \
     -o ruby-4.0.2.tar.gz
 
-  echo "51502b26b50b68df4963336ca41e368cde92c928faf91654de4c4c1791f82aac  ruby-4.0.2.tar.gz" \
+  # https://www.ruby-lang.org/en/news/2026/03/16/ruby-4-0-2-released/
+  echo "4618db85bb9ec04d8152d0099db488694a3d3c4f52106625e4ad547f1318db87  ruby-4.0.2.tar.gz" \
     | sha256sum -c -
 
   tar -xzf ruby-4.0.2.tar.gz
@@ -51,23 +53,6 @@ if [ ! -f /etc/bulletin-board.env ]; then
   )
 fi
 
-echo "Installing systemd service..."
-install -m 644 "$SCRIPT_DIR/bulletin-board.service" \
-  /etc/systemd/system/bulletin-board.service
+bash "$SCRIPT_DIR/configure-ec2.sh"
 
-systemctl daemon-reload
-systemctl enable bulletin-board
-
-echo "Configuring nginx..."
-install -m 644 "$SCRIPT_DIR/nginx-bulletin-board.conf" \
-  /etc/nginx/sites-available/bulletin-board
-
-ln -sfn /etc/nginx/sites-available/bulletin-board \
-  /etc/nginx/sites-enabled/bulletin-board
-
-rm -f /etc/nginx/sites-enabled/default
-nginx -t
-systemctl enable --now nginx
-systemctl reload nginx
-
-echo "Server setup complete. Ready to deploy the app."
+echo "Server setup complete. Fill in /etc/bulletin-board.env using the example, then deploy."

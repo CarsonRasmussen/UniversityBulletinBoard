@@ -17,6 +17,11 @@ if [ -z "$HOST" ] || [ -z "$KEY" ]; then
   exit 1
 fi
 
+if [[ ! "$HOST" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]]; then
+  echo "Host must be an IPv4 address or DNS hostname, without a scheme or port."
+  exit 1
+fi
+
 if [ ! -f "$KEY" ]; then
   echo "Key file not found: $KEY"
   exit 1
@@ -35,7 +40,7 @@ cd "$(dirname "$0")/.."
 echo "Installing dependencies and running tests..."
 bundle install
 RAILS_ENV=test bundle exec rails db:prepare
-PARALLEL_WORKERS=1 bundle exec rails test
+RAILS_ENV=test PARALLEL_WORKERS=1 bundle exec rails test
 
 echo "Packaging code..."
 ARCHIVE="$(mktemp /tmp/bulletin-board.XXXXXX.tar.gz)"
@@ -46,40 +51,54 @@ bash deploy/package.sh "$ARCHIVE"
 echo "Copying code to EC2..."
 scp -i "$KEY" "$ARCHIVE" "ubuntu@$HOST:bulletin-board.tar.gz"
 
-ssh -i "$KEY" "ubuntu@$HOST" \
-  'tar -xzf "$HOME/bulletin-board.tar.gz" -C /var/www/university-bulletin-board && rm "$HOME/bulletin-board.tar.gz"'
-
-echo "Preparing and restarting the app..."
-ssh -i "$KEY" "ubuntu@$HOST" 'bash -s' <<'REMOTE'
+ssh -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -i "$KEY" "ubuntu@$HOST" 'bash -s' <<'REMOTE'
 set -euo pipefail
-
-export PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
-export RAILS_ENV=production
-export SECRET_KEY_BASE="$(sudo sed -n 's/^SECRET_KEY_BASE=//p' /etc/bulletin-board.env)"
-export APP_HOST="$(sudo sed -n 's/^APP_HOST=//p' /etc/bulletin-board.env)"
-export APP_PROTOCOL="$(sudo sed -n 's/^APP_PROTOCOL=//p' /etc/bulletin-board.env)"
-export MAIL_FROM="$(sudo sed -n 's/^MAIL_FROM=//p' /etc/bulletin-board.env)"
-export SMTP_ADDRESS="$(sudo sed -n 's/^SMTP_ADDRESS=//p' /etc/bulletin-board.env)"
-export SMTP_PORT="$(sudo sed -n 's/^SMTP_PORT=//p' /etc/bulletin-board.env)"
-export SMTP_USERNAME="$(sudo sed -n 's/^SMTP_USERNAME=//p' /etc/bulletin-board.env)"
-export SMTP_PASSWORD="$(sudo sed -n 's/^SMTP_PASSWORD=//p' /etc/bulletin-board.env)"
-test -n "$SECRET_KEY_BASE"
-for setting in APP_HOST APP_PROTOCOL MAIL_FROM SMTP_ADDRESS SMTP_PORT SMTP_USERNAME SMTP_PASSWORD; do
-  if [ -z "${!setting}" ]; then
-    echo "Missing $setting in /etc/bulletin-board.env"
-    exit 1
+APP=/var/www/university-bulletin-board
+ARCHIVE="$HOME/bulletin-board.tar.gz"
+# Serialize updates on this server, including backup and preparation.
+exec 9>"$HOME/.bulletin-board-deploy.lock"
+flock -n 9 || { echo "Another deployment is running."; exit 1; }
+test -d "$APP" || { echo "Run setup-ec2.sh first."; exit 1; }
+sudo test -f /etc/bulletin-board.env
+# Check archive readability before taking the application offline.
+tar -tzf "$ARCHIVE" >/dev/null
+WAS_ACTIVE=false
+if sudo systemctl is-active --quiet bulletin-board; then WAS_ACTIVE=true; fi
+MUTATED=false
+BACKUP=""
+recover() {
+  status=$?
+  if [ "$status" -ne 0 ]; then
+    if [ "$MUTATED" = false ] && [ "$WAS_ACTIVE" = true ]; then
+      sudo systemctl start bulletin-board || true
+    elif [ "$MUTATED" = true ]; then
+      sudo systemctl stop bulletin-board || true
+    fi
+    echo "Deployment failed. Backup: ${BACKUP:-not created}."
+    echo "After code/migration changes the app stays stopped; follow README recovery steps."
+    echo "Inspect: sudo journalctl -u bulletin-board-prepare -u bulletin-board -n 50 --no-pager"
   fi
-done
-
-cd /var/www/university-bulletin-board
-mkdir -p log tmp/pids storage
-
-bundle config set --local path vendor/bundle
-bundle install
-bundle exec rails db:prepare
-bundle exec rails assets:precompile
-
-sudo systemctl restart bulletin-board
+}
+trap recover EXIT
+sudo systemctl stop bulletin-board
+sudo install -d -m 700 /var/backups/bulletin-board
+BACKUP="/var/backups/bulletin-board/app-$(date -u +%Y%m%d-%H%M%S)-$$.tar.gz"
+# A stopped service gives SQLite databases and uploads a consistent backup.
+sudo tar -czf "$BACKUP" --exclude='./vendor/bundle' --exclude='./.bundle' \
+  --exclude='./tmp' --exclude='./log' --exclude='./.git' -C "$APP" .
+sudo chmod 600 "$BACKUP"
+MUTATED=true
+tar -xzf "$ARCHIVE" -C "$APP"
+rm "$ARCHIVE"
+cd "$APP"
+sudo bash deploy/configure-ec2.sh
+# Both preparation and runtime read the same root-owned EnvironmentFile.
+# No secrets are interpolated into SSH commands or sourced as shell code.
+sudo systemctl start bulletin-board-prepare
+sudo systemctl reset-failed bulletin-board
+sudo systemctl start bulletin-board
+bash deploy/verify-ec2.sh
+echo "Backup retained at $BACKUP"
 REMOTE
 
 echo "Checking the live app..."
